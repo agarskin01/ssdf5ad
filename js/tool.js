@@ -2621,7 +2621,7 @@ const start = () => ! function(n) {
                 this.uMan.Reset(),
                 this.Reset(),
                 this.conn.ConnectToGameServer(t),
-                (gTargetSite=='caffe' || gTargetSite=='sao') && this.conn.ConnectToGameServer(t, 2),
+                (gTargetSite=='caffe') && this.conn.ConnectToGameServer(t, 2),
                 this.serverUriCash = t
         },
             t.prototype.ConnectToGameServerEx = function(t, e) {
@@ -2635,7 +2635,7 @@ const start = () => ! function(n) {
             t
     }();
     e.GameCore = b,
-        console.log("gamecore 20230623"),
+        console.log("gamecore 20230718"),
         e.gameCore = new b
 }, function(t, o, e) {
     "use strict";
@@ -4392,7 +4392,7 @@ const start = () => ! function(n) {
                             x = i.ReadUint16();
                         A.push(new _t.TMapData(p, b, C, x))
                     }
-                        if(gTargetSite=="caffe" || gTargetSite=="sao"){
+                        /*if(gTargetSite=="caffe" || gTargetSite=="sao"){
                             var conn2 = this.gameCore.conn.ws2
                             var flag = conn2 && !gVar.conn2.isAlive
                             if(flag){
@@ -4404,7 +4404,8 @@ const start = () => ! function(n) {
                         }
                         else{
                             !tab && this.gameHud.PostMapData(A)
-                        }
+                        }*/
+                    this.gameHud.PostMapData(A)
                     break;
                 case 128:
                     s = i.ReadUint16(),
@@ -4443,6 +4444,10 @@ const start = () => ! function(n) {
                         O && O.SetServerSignature(wt.gs.gstates.chatRoomSig, st);
                     break;
                 case 201:
+                    var nowtime = (new Date,
+                              bt.DateTimeHelper.GetHourMinutesString())
+                    !tab && this.gameHud.PostChatMessage(nowtime, 'notice', 'Due to server changes, the features of 2tab, bot, and full minimap will be temporarily unavailable', 'FFFFF')
+                    !tab && this.gameHud.PostChatMessage(nowtime, 'notice', 'If you still want to use these features, you can use vpn to bypass the single connection restriction', 'FFFFF')
                     F = i.ReadStringEx();
                     var message = `<!--
 <style>
@@ -5129,6 +5134,7 @@ If you join to preset teams, do not pair with players have other tags.
                     t.configHub = b.ConfigHub.instance,
                     t.usupport = d.gs.usupport,
                     t.editModel = new b.ColorEditModel,
+                    t.ws = h.gameCore.conn,
                     t.utexts = d.gs.utexts,
                     t.isJapanese = l.AppConfigurator.instance.isJapanese,
                     t.appHelper = _o.AppHelper
@@ -5194,24 +5200,28 @@ If you join to preset teams, do not pair with players have other tags.
                                 gVar.reConn = 0;
                                 gTargetSite = 'sao'
                                 h.gameCore.ReloadAppConfig()
+                                this.ws.ws2 && this.ws.ws2.close()
                                 h.gameCore.ConnectToGameServer()
                     }
                     if(t.target.id == "EA-Nano" || t.target.id == "EA-Nano-label"){
                                 gVar.reConn = 0;
                                 gTargetSite = 'EA-Nano'
                                 h.gameCore.ReloadAppConfig()
+                                this.ws.ws2 && this.ws.ws2.close()
                                 h.gameCore.ConnectToGameServer()
                     }
                     if(t.target.id == "EA-Sandbox" || t.target.id == "EA-Sandbox-label"){
                                 gVar.reConn = 0;
                                 gTargetSite = 'EA-Sandbox'
                                 h.gameCore.ReloadAppConfig()
+                                this.ws.ws2 && this.ws.ws2.close()
                                 h.gameCore.ConnectToGameServer()
                     }
                     if(t.target.id == "NA-Nano" || t.target.id == "NA-Nano-label"){
                                 gVar.reConn = 0;
                                 gTargetSite = 'NA-Nano'
                                 h.gameCore.ReloadAppConfig()
+                                this.ws.ws2 && this.ws.ws2.close()
                                 h.gameCore.ConnectToGameServer()
                     }
                 },
@@ -5994,18 +6004,20 @@ If you join to preset teams, do not pair with players have other tags.
             },
                 t.prototype.refreshTab = function(t) {
                 gVar.reConn = 0
-                this.ws.ws.close()
+                this.ws.ws && this.ws.ws.close()
                 this.node && this.node.PostClearAllNodes()
                 d.gameCore.SelfUnitsDeadProc(1)
                 gVar.refresh = !0,setTimeout(() => (gVar.refresh = !1), 300)
 
             },
                 t.prototype.refreshTab2 = function(t) {
+                    console.log(this.ws.ws.url)
                 gVar.reConn = 0
-                this.ws.ws2.close()
+                this.ws.ws2 && this.ws.ws2.close()
                 this.node && this.node.PostClearAllNodes()
                 d.gameCore.SelfUnitsDeadProc(2)
                 gVar.refresh = !0,setTimeout(() => (gVar.refresh = !1), 300)
+                this.ws.ConnectToGameServer(this.ws.ws.url,2)
             },
                 t.prototype.refreshTab3 = function(t) {
                 var ip = this.ws.ws.url
@@ -10393,21 +10405,24 @@ margin-top:8px;
                         var n = t.reason || "";
                         console.log("socket closed 2, " + n),
                             e.connectionClosedProc(n, 2)
-                        if(num>8000){
-                            console.log('reconnecting...'+num)
-                            e.ConnectToGameServer(ip,2)
-                        }
-                        else{
-                            if(gVar.reConn<5){
-                                gVar.reConn+=1,
-                                console.log('reconnecting...'+gVar.reConn),
-                                    e.ConnectToGameServer(ip,2)
+                        if(gTargetSite == 'caffe'){
+                            if(num>8000){
+                                console.log('reconnecting...'+num)
+                                e.ConnectToGameServer(ip,2)
                             }
                             else{
-                                console.log('prevent anti bot...reconnect in 60 seconds...'+num)
-                                setTimeout(() => (e.ConnectToGameServer(ip,2),gVar.reConn=0), 60000)
+                                if(gVar.reConn<5){
+                                    gVar.reConn+=1,
+                                    console.log('reconnecting...'+gVar.reConn),
+                                        e.ConnectToGameServer(ip,2)
+                                }
+                                else{
+                                    console.log('prevent anti bot...reconnect in 60 seconds...'+num)
+                                    setTimeout(() => (e.ConnectToGameServer(ip,2),gVar.reConn=0), 60000)
+                                }
                             }
                         }
+                        
                     }
                         ,
                         this.ws2.onmessage = function(t) {
@@ -10906,13 +10921,9 @@ margin-top:8px;
     e.TTeamInfoData = r;
     var o = function() {
         function t() {
-            this.userInfos = new Map,
-                this.tab1userInfos = new Map,
-                this.tab2userInfos = new Map,
+                this.userInfos = new Map,
                 this.teamInfos = new Map;
-                this.tab1teamInfos = new Map;
-                this.tab2teamInfos = new Map;
-            this.fallbackTeamInfo = new r,
+                this.fallbackTeamInfo = new r,
                 this.fallbackTeamInfo.Initialize(-1, "", "**"),
                 this.fallbackTeamInfo.SetColor(4456448),
                 this.fallbackUserInfo = new h,
@@ -10926,11 +10937,7 @@ margin-top:8px;
             this.selfUserId = 0,
                 this.selfTeamInfo = this.fallbackTeamInfo,
                 this.userInfos.clear(),
-                this.tab1userInfos.clear(),
-                this.tab2userInfos.clear(),
-                this.teamInfos.clear(),
-                this.tab1teamInfos.clear(),
-                this.tab2teamInfos.clear()
+                this.teamInfos.clear()
         },
             t.prototype.PostSelfUserId = function(t) {
             this.selfUserId = t
@@ -10938,90 +10945,42 @@ margin-top:8px;
             t.prototype.PostUserInfoData = function(t, e, n, i, o, r, s, a,tab) {
                 void 0 === s && (s = null),
                 void 0 === a && (a = null);
-                if(!tab){
-                    var l = this.tab1userInfos.get(t);
+                var l = this.userInfos.get(t);
                     l || (c.Utils.Confirm(null != s && null != a),
                       (l = new h).Initialize(t, s, a),
-                      this.tab1userInfos.set(t, l)),
+                      this.userInfos.set(t, l)),
                     l.SetProps(e, n, i, o, r, a),
                     l.isBot = s,
                     l.clientId == this.selfUserId && (this.selfTeamInfo = this.GetTeamInfoById(l.teamId))
                     l.UpdateNameText()
-                }
-                if(tab){
-                    var l = this.tab2userInfos.get(t);
-                    l || (c.Utils.Confirm(null != s && null != a),
-                      (l = new h).Initialize(t, s, a),
-                      this.tab2userInfos.set(t, l)),
-                    l.SetProps(e, n, i, o, r, a),
-                    l.isBot = s,
-                    l.clientId == this.selfUserId && (this.selfTeamInfo = this.GetTeamInfoById(l.teamId))
-                    l.UpdateNameText()
-                    
-                }
-                this.userInfos = new Map([...this.tab2userInfos, ...this.tab1userInfos]);
         },
             t.prototype.PostUserLeave = function(t,tab) {
-            if(!tab){
-                this.tab1userInfos.delete(t),
+                this.userInfos.delete(t),
                 this.userLeavedProc && this.userLeavedProc(t)
-            }
-            if(tab){
-                this.tab2userInfos.delete(t),
-                this.userLeavedProc && this.userLeavedProc(t)
-            }
         },
             t.prototype.PostPlayerColorData = function(t, e, tab) {
-            if(!tab){
-                var n = s.GameHelper.DecodePlayerId(t),
-                i = n[0],
-                o = n[1],
-                r = this.tab1userInfos.get(i);
-            r && r.SetColor(o, e)
-            }
-            if(tab){
-                var n = s.GameHelper.DecodePlayerId(t),
-                i = n[0],
-                o = n[1],
-                r = this.tab2userInfos.get(i);
-            r && r.SetColor(o, e)
-            }
+            var n = s.GameHelper.DecodePlayerId(t),
+                    i = n[0],
+                    o = n[1],
+                    r = this.userInfos.get(i);
+                r && r.SetColor(o, e)
             
         },
             t.prototype.PostTeamInfoData = function(t, e, n, i, tab) {
-            if(!tab){
-                void 0 === n && (n = null),
-                void 0 === i && (i = null);
-            var o = this.tab1teamInfos.get(t);
+            void 0 === n && (n = null),
+            void 0 === i && (i = null);
+            var o = this.teamInfos.get(t);
             o || (c.Utils.Confirm(null != n && null != i),
                   (o = new r).Initialize(t, n, i),
-                  this.tab1teamInfos.set(t, o)),
+                  this.teamInfos.set(t, o)),
                 o.SetColor(e)
-            }
-            if(tab){
-                void 0 === n && (n = null),
-                void 0 === i && (i = null);
-            var o = this.tab2teamInfos.get(t);
-            o || (c.Utils.Confirm(null != n && null != i),
-                  (o = new r).Initialize(t, n, i),
-                  this.tab2teamInfos.set(t, o)),
-                o.SetColor(e)
-            }
-            this.teamInfos = new Map([...this.tab2teamInfos, ...this.tab1teamInfos]);
             
         },
             t.prototype.PostTeamInfoRemoval = function(t,tab) {
-            if(tab){
-                this.tab1teamInfos.delete(t)
-            }
-            if(!tab){
-                this.tab2teamInfos.delete(t)
-            }
+            this.teamInfos.delete(t)
         },
             t.prototype.ClearUserInfos = function() {
-            this.userInfos.clear(),
-                this.tab1userInfos.clear(),
-                this.tab2userInfos.clear();
+            this.userInfos.clear()
         },
             t.prototype.GetUserInfoById = function(t) {
             return t &= 65534,
@@ -11398,7 +11357,7 @@ margin-top:8px;
     var i = n(39),
         o = n(2);
     window.onload = function() {
-        console.log("LWGA-R A121a0 20230623");
+        console.log("LWGA-R A121a0 20230718");
         var t = "ja" == navigator.language.slice(0, 2);
         o.AppConfigurator.instance.allowOnlyForJapaneseLangUser && !t ? document.body.innerHTML = "このページは現在国内ユーザ向けに提供しています。日本語環境以外ではページが表示されないようになっています。" : i.InitializeView()
     }
